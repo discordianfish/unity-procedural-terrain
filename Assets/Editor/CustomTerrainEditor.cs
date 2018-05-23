@@ -44,6 +44,9 @@ public class CustomTerrainEditor : Editor {
 
     SerializedProperty smoothAmount;
 
+    GUITableState splatMapTable;
+    SerializedProperty splatHeights;
+
     // folds out -----
     bool showRandom = false;
     bool showLoadHeights = false;
@@ -52,6 +55,7 @@ public class CustomTerrainEditor : Editor {
     bool showVoronoi = false;
     bool showMPD = false;
     bool showSmooth = false;
+    bool showSplatMaps = false;
 
     void OnEnable()
     {
@@ -84,6 +88,9 @@ public class CustomTerrainEditor : Editor {
         mpdRoughness = serializedObject.FindProperty("mpdRoughness");
 
         smoothAmount = serializedObject.FindProperty("smoothAmount");
+
+        splatMapTable = new GUITableState("splatMapTable");
+        splatHeights = serializedObject.FindProperty("splatHeights");
     }
 
     // Display loop for the inspector gui
@@ -180,6 +187,27 @@ public class CustomTerrainEditor : Editor {
                 terrain.MidPointDisplacement();
             }
         }
+        showSplatMaps = EditorGUILayout.Foldout(showSplatMaps, "Splat Maps");
+        if (showSplatMaps)
+        {
+            perlinParameterTable = GUITableLayout.DrawTable(splatMapTable,
+                serializedObject.FindProperty("splatHeights")); // why not the class attribute we mapped?
+            GUILayout.Space(40);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("+"))
+            {
+                terrain.AddNewSplatHeight();
+            }
+            if (GUILayout.Button("-"))
+            {
+                terrain.RemoveSplatHeight();
+            }
+            EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button("Apply SplatMaps"))
+            {
+                terrain.SplatMaps();
+            }
+        }
         showSmooth = EditorGUILayout.Foldout(showSmooth, "Smooth");
         if (showSmooth)
         {
@@ -190,7 +218,10 @@ public class CustomTerrainEditor : Editor {
             }
         }
 
-
+        if (GUILayout.Button("Reset Terrain"))
+        {
+            terrain.ResetTerrain();
+        }
         serializedObject.ApplyModifiedProperties();
     }
    
