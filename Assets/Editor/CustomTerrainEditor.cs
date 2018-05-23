@@ -46,6 +46,12 @@ public class CustomTerrainEditor : Editor {
 
     GUITableState splatMapTable;
     SerializedProperty splatHeights;
+    /*
+    SerializedProperty splatScaleX;
+    SerializedProperty splatScaleY;
+    SerializedProperty splatScale;
+    SerializedProperty splatOffset;
+    */
 
     // folds out -----
     bool showRandom = false;
@@ -91,6 +97,12 @@ public class CustomTerrainEditor : Editor {
 
         splatMapTable = new GUITableState("splatMapTable");
         splatHeights = serializedObject.FindProperty("splatHeights");
+        /*
+        splatScaleX = serializedObject.FindProperty("splatScaleX");
+        splatScaleY = serializedObject.FindProperty("splatScaleY");
+        splatScale = serializedObject.FindProperty("splatScale");
+        splatOffset = serializedObject.FindProperty("splatOffset");
+        */
     }
 
     // Display loop for the inspector gui
@@ -190,6 +202,12 @@ public class CustomTerrainEditor : Editor {
         showSplatMaps = EditorGUILayout.Foldout(showSplatMaps, "Splat Maps");
         if (showSplatMaps)
         {
+            /*
+            EditorGUILayout.Slider(splatOffset, 0, 0.1f, new GUIContent("Offset"));
+            EditorGUILayout.Slider(splatScaleX, 0.001f, 1, new GUIContent("Noise X Scale"));
+            EditorGUILayout.Slider(splatScaleY, 0.001f, 1, new GUIContent("Noise Y Scale"));
+            EditorGUILayout.Slider(splatScale, 0, 1, new GUIContent("Noise Scaler"));*/
+
             perlinParameterTable = GUITableLayout.DrawTable(splatMapTable,
                 serializedObject.FindProperty("splatHeights")); // why not the class attribute we mapped?
             GUILayout.Space(40);
