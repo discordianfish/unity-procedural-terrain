@@ -71,6 +71,8 @@ public class CustomTerrain : MonoBehaviour {
         public Texture2D texture = null;
         public float minHeight = 0.1f;
         public float maxHeight = 0.2f;
+        public float minSlope = 0;
+        public float maxSlope = 1.5f;
         public Vector2 tileOffset = new Vector2(0, 0);
         public Vector2 tileSize = new Vector2(50, 50);
         public bool remove = false;
@@ -112,23 +114,21 @@ public class CustomTerrain : MonoBehaviour {
         }
         return neighbours;
     }
-    public void AddNewSplatHeight() {
-        splatHeights.Add(new SplatHeights());
-    }
-    public void RemoveSplatHeight() {
-        List<SplatHeights> keptSplatHeights = new List<SplatHeights>();
-        for (int i = 0; i<splatHeights.Count;i++)
-        {
-            if (!splatHeights[i].remove)
-            {
-                keptSplatHeights.Add(splatHeights[i]);
-            }
-        }
-        if (keptSplatHeights.Count == 0)
-        {
-            keptSplatHeights.Add(splatHeights[0]);
-        }
-        splatHeights = keptSplatHeights;
+    float GetSteepness(float[,] heightmap, int x, int y, int width, int height)
+    {
+        float h = heightmap[x, y];
+        int nx = x + 1;
+        int ny = y + 1;
+
+        // on edge, find gradient from vector in other direction
+        if (nx > width - 1) nx = nx - 1;
+        if (ny > width - 1) ny = ny - 1;
+
+        float dx = heightmap[nx, y] - h;
+        float dy = heightmap[x, ny] - h;
+        Vector2 gradient = new Vector2(dx, dy);
+
+        return gradient.magnitude;
     }
     public void SplatMaps()
     {
@@ -161,7 +161,16 @@ public class CustomTerrain : MonoBehaviour {
                     float offset = splatHeights[i].splatOffset + noise;
                     float thisHeightStart = splatHeights[i].minHeight - offset;
                     float thisHeightStop = splatHeights[i].maxHeight + offset;
-                    if ((heightMap[x, y] >= thisHeightStart && heightMap[x, y] <= thisHeightStop))
+                    /*float steepness = GetSteepness(heightMap, x, y,
+                                                   terrainData.heightmapWidth,
+                                                   terrainData.heightmapWidth);
+                    */
+                    // For some reason?? the alpha map and height map is rotated 90 degrees:
+                    float steepness = terrainData.GetSteepness(y/(float)terrainData.alphamapHeight, x/(float)terrainData.alphamapWidth);
+                    if (heightMap[x, y] >= thisHeightStart &&
+                        heightMap[x, y] <= thisHeightStop &&
+                        steepness >= splatHeights[i].minSlope &&
+                        steepness <= splatHeights[i].maxSlope)
                     {
                         splat[i] = 1;
                     }
@@ -174,6 +183,24 @@ public class CustomTerrain : MonoBehaviour {
             }
         }
         terrainData.SetAlphamaps(0, 0, splatMapData);
+    }
+    public void AddNewSplatHeight() {
+        splatHeights.Add(new SplatHeights());
+    }
+    public void RemoveSplatHeight() {
+        List<SplatHeights> keptSplatHeights = new List<SplatHeights>();
+        for (int i = 0; i<splatHeights.Count;i++)
+        {
+            if (!splatHeights[i].remove)
+            {
+                keptSplatHeights.Add(splatHeights[i]);
+            }
+        }
+        if (keptSplatHeights.Count == 0)
+        {
+            keptSplatHeights.Add(splatHeights[0]);
+        }
+        splatHeights = keptSplatHeights;
     }
     void NormalizeVector(float[] v)
     {

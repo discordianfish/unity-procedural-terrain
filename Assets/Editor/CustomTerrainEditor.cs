@@ -53,6 +53,9 @@ public class CustomTerrainEditor : Editor {
     SerializedProperty splatOffset;
     */
 
+    // scrollbar
+    Vector2 scrollPos;
+
     // folds out -----
     bool showRandom = false;
     bool showLoadHeights = false;
@@ -112,6 +115,11 @@ public class CustomTerrainEditor : Editor {
         CustomTerrain terrain = (CustomTerrain)target; // `target` is linked to [1] "a link to class"
         // terrain.randomHeightRange = .. is possible, but we use serialization because otherwise editing
         // the code would reset the state and we're loosing whatever we setup in the inspect
+
+        Rect r = EditorGUILayout.BeginVertical();
+        scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Width(r.width), GUILayout.Height(r.height));
+        EditorGUI.indentLevel++;
+
         EditorGUILayout.PropertyField(resetTerrain);
         showRandom = EditorGUILayout.Foldout(showRandom, "Random"); // show foldout toggle
         if (showRandom)
@@ -240,6 +248,8 @@ public class CustomTerrainEditor : Editor {
         {
             terrain.ResetTerrain();
         }
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
         serializedObject.ApplyModifiedProperties();
     }
    
