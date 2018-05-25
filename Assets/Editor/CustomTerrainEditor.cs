@@ -56,6 +56,9 @@ public class CustomTerrainEditor : Editor {
     // scrollbar
     Vector2 scrollPos;
 
+    //
+    Texture2D hmTexture;
+
     // folds out -----
     bool showRandom = false;
     bool showLoadHeights = false;
@@ -65,6 +68,7 @@ public class CustomTerrainEditor : Editor {
     bool showMPD = false;
     bool showSmooth = false;
     bool showSplatMaps = false;
+    bool showHeightMap = false;
 
     void OnEnable()
     {
@@ -115,6 +119,9 @@ public class CustomTerrainEditor : Editor {
         CustomTerrain terrain = (CustomTerrain)target; // `target` is linked to [1] "a link to class"
         // terrain.randomHeightRange = .. is possible, but we use serialization because otherwise editing
         // the code would reset the state and we're loosing whatever we setup in the inspect
+
+        int height = terrain.terrainData.heightmapHeight;
+        int width = terrain.terrainData.heightmapWidth;
 
         Rect r = EditorGUILayout.BeginVertical();
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Width(r.width), GUILayout.Height(r.height));
@@ -247,6 +254,39 @@ public class CustomTerrainEditor : Editor {
         if (GUILayout.Button("Reset Terrain"))
         {
             terrain.ResetTerrain();
+        }
+        showHeightMap = EditorGUILayout.Foldout(showHeightMap, "HeightMap");
+        if (showHeightMap)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(hmTexture, GUILayout.Width(height), GUILayout.Height(width));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Refresh"))
+            {
+                Color color;
+                float cv;
+                hmTexture = new Texture2D(width, height, TextureFormat.ARGB32, false);
+                float[,] heightMap = terrain.terrainData.GetHeights(0, 0, width, height);
+
+                // why alphamap?
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        cv = heightMap[x, y];
+                        color = new Color(cv, cv, cv, 1);
+                        hmTexture.SetPixel(x, y, color);
+                    }
+                }
+                hmTexture.Apply();
+            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
         }
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
