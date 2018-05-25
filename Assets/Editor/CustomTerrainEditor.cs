@@ -53,6 +53,11 @@ public class CustomTerrainEditor : Editor {
     SerializedProperty splatOffset;
     */
 
+    GUITableState vegetationTable;
+    SerializedProperty vegetation;
+    SerializedProperty vegTreesSpacing;
+    SerializedProperty vegTreesMax;
+
     // scrollbar
     Vector2 scrollPos;
 
@@ -69,6 +74,7 @@ public class CustomTerrainEditor : Editor {
     bool showSmooth = false;
     bool showSplatMaps = false;
     bool showHeightMap = false;
+    bool showVegetation = false;
 
     void OnEnable()
     {
@@ -110,6 +116,11 @@ public class CustomTerrainEditor : Editor {
         splatScale = serializedObject.FindProperty("splatScale");
         splatOffset = serializedObject.FindProperty("splatOffset");
         */
+        vegetationTable = new GUITableState("vegetationTable");
+        vegTreesSpacing = serializedObject.FindProperty("vegTreesSpacing");
+        vegTreesMax = serializedObject.FindProperty("vegTreesMax");
+
+        vegetation = serializedObject.FindProperty("vegetation");
     }
 
     // Display loop for the inspector gui
@@ -223,7 +234,7 @@ public class CustomTerrainEditor : Editor {
             EditorGUILayout.Slider(splatScaleY, 0.001f, 1, new GUIContent("Noise Y Scale"));
             EditorGUILayout.Slider(splatScale, 0, 1, new GUIContent("Noise Scaler"));*/
 
-            perlinParameterTable = GUITableLayout.DrawTable(splatMapTable,
+            splatMapTable = GUITableLayout.DrawTable(splatMapTable,
                 serializedObject.FindProperty("splatHeights")); // why not the class attribute we mapped?
             GUILayout.Space(40);
             EditorGUILayout.BeginHorizontal();
@@ -239,6 +250,30 @@ public class CustomTerrainEditor : Editor {
             if (GUILayout.Button("Apply SplatMaps"))
             {
                 terrain.SplatMaps();
+            }
+        }
+        showVegetation = EditorGUILayout.Foldout(showVegetation, "Vegetation");
+        if (showVegetation)
+        {
+            EditorGUILayout.IntSlider(vegTreesMax, 1, 10000, new GUIContent("Maxium Trees"));
+            EditorGUILayout.IntSlider(vegTreesSpacing, 1, 20, new GUIContent("Trees Spacing"));
+
+            vegetationTable = GUITableLayout.DrawTable(vegetationTable,
+                serializedObject.FindProperty("vegetation")); // why not the class attribute we mapped?
+            GUILayout.Space(20);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("+"))
+            {
+                terrain.AddNewVegetation();
+            }
+            if (GUILayout.Button("-"))
+            {
+                terrain.RemoveVegetation();
+            }
+            EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button("Apply Vegetation"))
+            {
+                terrain.ApplyVegetation();
             }
         }
         showSmooth = EditorGUILayout.Foldout(showSmooth, "Smooth");
@@ -288,6 +323,8 @@ public class CustomTerrainEditor : Editor {
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
+
+
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
         serializedObject.ApplyModifiedProperties();
