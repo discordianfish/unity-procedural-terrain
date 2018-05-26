@@ -172,6 +172,8 @@ public class CustomTerrain : MonoBehaviour {
                 {
                     int tx = x + UnityEngine.Random.Range(-(vegTreesSpacing / 2), (vegTreesSpacing / 2));
                     int tz = z + UnityEngine.Random.Range(-(vegTreesSpacing / 2), (vegTreesSpacing / 2));
+                    if (tz > terrainData.size.z || tx > terrainData.size.x)
+                        continue;
 
                     float thisHeight = terrainData.GetHeight(tx, tz) / terrainData.size.y;
 
@@ -183,6 +185,24 @@ public class CustomTerrain : MonoBehaviour {
                                                     thisHeight,
                                                     tz / terrainData.size.z);
 
+                    // Why not using tx/tz?
+                    // transform.position = instance.position is relative(?) I don't get it, see:
+                    // 7/46; 5m50s
+                    Vector3 treeWorldPos = new Vector3(instance.position.x * terrainData.size.x,
+                                                       instance.position.y * terrainData.size.y,
+                                                       instance.position.z * terrainData.size.z) +
+                                                         this.transform.position;
+                    RaycastHit hit;
+                    int layerMask = 1 << terrainLayer; // << ???
+
+                    if (Physics.Raycast(treeWorldPos, -Vector3.up, out hit, 100, layerMask) ||
+                        Physics.Raycast(treeWorldPos, -Vector3.down, out hit, 100, layerMask))
+                    {
+                        float treeHeight = (hit.point.y - this.transform.position.y) / terrainData.size.y;
+                        instance.position = new Vector3(instance.position.x,
+                                                        treeHeight,
+                                                        instance.position.z);
+                    }
                     instance.rotation = UnityEngine.Random.Range(0, 360);
                     instance.prototypeIndex = tp;
                     instance.color = Color.white;
@@ -643,35 +663,61 @@ public class CustomTerrain : MonoBehaviour {
         terrain = this.GetComponent<Terrain>();
         terrainData = Terrain.activeTerrain.terrainData;
     }
+
+    public enum TagType {  Tag = 0, Layer = 1}
+    [SerializeField] // why not prop?
+    int terrainLayer = -1;
     private void Awake()
     {
         SerializedObject tagManager = new SerializedObject(
             AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
-        SerializedProperty tagsProp = tagManager.FindProperty("tags");
-        
-        AddTag(tagsProp, "Terrain");
-        AddTag(tagsProp, "Cloud");
-        AddTag(tagsProp, "Shore");
 
+        SerializedProperty tagsProp = tagManager.FindProperty("tags");
+        AddTag(tagsProp, "Terrain", TagType.Tag);
+        AddTag(tagsProp, "Cloud", TagType.Tag);
+        AddTag(tagsProp, "Shore", TagType.Tag);
         tagManager.ApplyModifiedProperties();
 
+        SerializedProperty layerProp = tagManager.FindProperty("layers");
+        terrainLayer = AddTag(layerProp, "Terrain", TagType.Layer);
+        tagManager.ApplyModifiedProperties(); // why twice?
+
         this.gameObject.tag = "Terrain";
+        this.gameObject.layer = terrainLayer;
     }
 
-    void AddTag(SerializedProperty tagsProp, string newTag)
+    int AddTag(SerializedProperty tagsProp, string newTag, TagType tType)
     {
-        bool found = false;
         for (int i = 0; i < tagsProp.arraySize; i++)
         {
             SerializedProperty t = tagsProp.GetArrayElementAtIndex(i);
-            if (t.stringValue.Equals(newTag)) { found = true;  break; }
+            if (t.stringValue.Equals(newTag)) {
+                return i;
+            }
         }
-        if (!found)
+        switch (tType)
         {
-            tagsProp.InsertArrayElementAtIndex(0);
-            SerializedProperty newTagProp = tagsProp.GetArrayElementAtIndex(0);
-            newTagProp.stringValue = newTag;
+            case TagType.Tag:
+                tagsProp.InsertArrayElementAtIndex(0);
+                SerializedProperty newTagProp = tagsProp.GetArrayElementAtIndex(0);
+                newTagProp.stringValue = newTag;
+                return 0; // we always insert at index 0
+                break;
+
+            case TagType.Layer:
+                for (int j = 8; j < tagsProp.arraySize; j++)
+                {
+                    SerializedProperty newLayer = tagsProp.GetArrayElementAtIndex(j);
+                    if (newLayer.stringValue == "")
+                    {
+                        Debug.Log("Adding New Layer:" + newTag);
+                        newLayer.stringValue = newTag;
+                        return j;
+                    }
+                }
+                break;
         }
+        return -1;
     }
 
     // Use this for initialization
